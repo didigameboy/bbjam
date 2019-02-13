@@ -1,2 +1,2 @@
 # bbjam
-A basket Ball Game using TIC-80
+A Basket Ball Game using TIC-80
