@@ -3,12 +3,19 @@
 // desc:   basket ball action gam3z
 // script: js
 
+//optimize objects to inicialize them with more or less parameters
+//update game objects and animation control
+//define game object
+//define game loop/draw/input updates
+
 //Global Vars - (res 240x136)
 var rescale = 2; //game rescale
 var anim_default_speed = 10; //anim speed, bigger is slower
 var objects = [];  //store all game objects
 var drawtable = []; //array of sprites to draw. the idea is to use index to order objects
 var drawfirst = []; // array of sprites to draw before objects as shadows
+var btn4release = false;
+var btn5release = false;
 
 /** Animator constructor */
 function Anim(name, init, end){
@@ -78,7 +85,7 @@ function Instance(lcx,lcy){
 		}
 	}
 	obj.getCurrentAnim = function(){ 
-		return this.anim.name;
+		return this.anim != null ? this.anim.name : "";
 	}
 	obj.getAnim = function(name){ 
 		for (var i=0; i<this.sprites.length; i++){
@@ -102,7 +109,7 @@ function init(){
 	player.addAnim(new Anim("pass",33,34));
 	player.addAnim(new Anim("defend",35,36));
 	player.addAnim(new Anim("shoot",49,51));
-	player.setAnim("idle");
+	//player.setAnim("idle");
 	player.name = "player";
 	//other
 	adv = new Instance(80,24);
@@ -216,8 +223,16 @@ function inputs(){
 	} else {
 		player.hspeed = 0;
 	}
-	if(btn(4)) ball.state = "pass";
-	if(btn(5)) ball.state = "shoot";
+	if(btn(4)) { //btnA or keyboar = Z
+		ball.state = "pass";
+	}
+	if(btn(5)) {//btnB or keyboar = X
+		ball.state = "shoot";
+	}
+	if(btn(6)) { //btnX or keyb A
+	}
+	if(btn(7)) {//btnY or keyb S
+	}
 }
 
 function update(){
