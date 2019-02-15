@@ -3,6 +3,15 @@
 // desc:   basket ball action gam3z
 // script: js
 
+//added font (occupies too much space on sprite sheet idont know if Ill keep)
+//palette swat to writ font
+//my pal 140c1cea893466707d4e4a4e854c30346524d04648757161597dceca85657f8f9b6daa2cd2aa996dc2cadad45edeeed6
+//https://github.com/nesbox/TIC-80/wiki/Code-examples-and-snippets#palette-swapping
+//animate title screen by code
+//add easing function
+//add intro sprite
+//add gamestate - add menu
+//create release button
 //optimize objects to inicialize them with more or less parameters
 //update game objects and animation control
 //define game object
@@ -14,8 +23,13 @@ var anim_default_speed = 10; //anim speed, bigger is slower
 var objects = [];  //store all game objects
 var drawtable = []; //array of sprites to draw. the idea is to use index to order objects
 var drawfirst = []; // array of sprites to draw before objects as shadows
-var btn4release = false;
+var btn4pressed = false;
 var btn5release = false;
+var debugmsg = "";
+var debug_t = 0;
+var gamestate = 0; //splash screen, - intro - menu - game - pause
+var step = 0; //count step frames
+var palette = "140c1cea893466707d4e4a4e854c30346524d04648757161597dceca85657f8f9b6daa2cd2aa996dc2cadad45edeeed6";
 
 /** Animator constructor */
 function Anim(name, init, end){
@@ -198,6 +212,10 @@ function draw(){
 		}
 	}
 	//debug
+	if (debug_t>0){
+		print(debugmsg,0,80)
+		debug_t--	
+	}
 	print("X:"+player.x + " Y:"+player.y, 0, 100);
 }
 
@@ -224,7 +242,13 @@ function inputs(){
 		player.hspeed = 0;
 	}
 	if(btn(4)) { //btnA or keyboar = Z
-		ball.state = "pass";
+	//	ball.state = "pass";
+		btn4pressed = true;
+	}
+	if (!btn(4)&& btn4pressed){
+		btn4pressed = false;
+		debugmsg = "btn4 released";
+		debug_t = 60;
 	}
 	if(btn(5)) {//btnB or keyboar = X
 		ball.state = "shoot";
@@ -274,11 +298,101 @@ function update(){
 	}
 }
 
+function splashscreen(){
+
+}
+
+function intro(){	
+	cls(0);	
+	if (typeof(intropoint) == 'undefined') {		
+		intropoint = new Object();
+		intropoint.x = 240; //(res 240x136)
+		intropoint.y = 32; // screen character
+		intropoint.step = 0;
+		intropoint.logox = -128; //off screen
+		intropoint.logoy = 1;
+		intropoint.wait = 0;
+		intropoint.flicker = 0;		
+	}
+	if (intropoint.x >80) {
+		//x,y,w,h,color
+		//rect(intropoint.x,intropoint.y-2,4,40,5);		
+		//id x y [colorkey=-1] [scale=1] [flip=0] [rotate=0] [w=1 h=1]
+		//slide char
+		if (intropoint.step % 3 == 0) spr(88, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11); //fliker shadow
+		spr(80, intropoint.x, intropoint.y, 0, 1, 0,0,8,11);
+		var slidespd = intropoint.x > 120 ? 2 : 1;				
+		intropoint.x -=slidespd;		
+	} else if (intropoint.logox < 45){ //those ifs are like while since they are in game loop ;>
+		//slide title		
+		var slidespd = intropoint.logox < 10 ? 2 : 1;
+		intropoint.logox += slidespd;
+		drawtitlescreen()
+	} else if (intropoint.wait < 120) {
+		drawtitlescreen()
+		intropoint.wait++;
+	} else if (intropoint.wait < 150){
+		drawtitlescreen();
+		pal(15, 3); //swap colors (last color index is for font)
+		print("PRESS START", 10, 81);
+		pal(); //reset pal
+		intropoint.wait++;
+	} else if (intropoint.wait < 180){
+		drawtitlescreen();
+		//print("PRESS START", 10, 80)
+		//font text, x, y, colorkey, char width, char height, fixed, scale -> width
+		//pal();
+		//font("PRESS START", 10, 80, 1, 1, true, 1); <- range error invalid stack index 8
+		pal(15, 3); //swap colors (last color index is for font)
+		print("PRESS START", 10, 81);
+		pal(); //reset pal
+		if (intropoint.flicker < 60){ //make it blink
+			print("PRESS START", 10, 80);
+		} else if (intropoint.flicker > 120) intropoint.flicker = 0;
+		intropoint.flicker++;
+		if(btn(4) || btn(5)) {			
+			gamestate = 2;			
+		}
+	}
+	intropoint.step++;
+}
+
+function drawtitlescreen(){
+	spr(384, intropoint.logox, intropoint.logoy, 0, 1, 0,0, 16, 4);				
+	if (intropoint.step % 3 == 0) spr(88, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11);
+	spr(80, intropoint.x,intropoint.y, 0, 1, 0,0,8,11);
+}
+
+function menu(){
+
+}
+
 function approach(start, end, step){
 	if (start < end){
 		return Math.min(start + step, end);
 	} else {
 		return Math.max(start - step, end);
+	}
+}
+
+/**
+ * EaseQuadin, function from http://www.gizma.com/easing/
+ * 
+ * t:time, b:start value(0), c:change in value(1), d:duration
+ */
+function easeQuadin(t,b,c,d){	
+	t /= d;
+	return c*t*t + b;
+}
+/**
+ * Swap color C0 with C1
+ * https://github.com/nesbox/TIC-80/wiki/Code-examples-and-snippets#palette-swapping
+ */
+function pal(c0,c1){
+	if(c0===undefined&&c1===undefined){
+		for(var i=0;i<16;i++){poke4(32736+i,i);}
+	}else{
+		poke4(32736+c0,c1);
 	}
 }
 
@@ -291,10 +405,24 @@ init();
  */
 function TIC()
 {
-	//update controls
-	inputs();
-	//update objects
-	update();
-	//update screen
-	draw();
+	
+	switch (gamestate) {
+		case 0:
+			intro();
+			break;
+		case 1: 
+			menu();
+			break;
+		case 2: 
+			//update controls
+			inputs();
+			//update objects
+			update();
+			//update screen
+			draw();
+			break;
+		default:
+			break;
+	}
+	
  }
