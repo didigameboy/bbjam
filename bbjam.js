@@ -329,16 +329,16 @@ function intro(){
 		intropoint.logox += slidespd;
 		drawtitlescreen()
 	} else if (intropoint.wait < 120) {
-		drawtitlescreen()
+		drawtitlescreen(1)
 		intropoint.wait++;
 	} else if (intropoint.wait < 150){
-		drawtitlescreen();
+		drawtitlescreen(1);
 		pal(15, 3); //swap colors (last color index is for font)
 		print("PRESS START", 10, 81);
 		pal(); //reset pal
 		intropoint.wait++;
 	} else if (intropoint.wait < 180){
-		drawtitlescreen();
+		drawtitlescreen(1);
 		//print("PRESS START", 10, 80)
 		//font text, x, y, colorkey, char width, char height, fixed, scale -> width
 		//pal();
@@ -357,9 +357,9 @@ function intro(){
 	intropoint.step++;
 }
 
-function drawtitlescreen(){
-	spr(384, intropoint.logox, intropoint.logoy, 0, 1, 0,0, 16, 4);				
-	if (intropoint.step % 3 == 0) spr(88, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11);
+function drawtitlescreen(p){
+	spr(384, intropoint.logox, intropoint.logoy, 0, 1, 0,0, 16, 4);					 
+	if (intropoint.step % 3 == 0 && p == undefined) spr(88, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11);
 	spr(80, intropoint.x,intropoint.y, 0, 1, 0,0,8,11);
 }
 
