@@ -3,6 +3,9 @@
 // desc:   basket ball action gam3z
 // script: js
 
+//optimized players shadow constructor and update
+//added parent/children obj
+//added skip intro button
 //added font (occupies too much space on sprite sheet idont know if Ill keep)
 //palette swat to writ font
 //my pal 140c1cea893466707d4e4a4e854c30346524d04648757161597dceca85657f8f9b6daa2cd2aa996dc2cadad45edeeed6
@@ -24,19 +27,22 @@ var objects = [];  //store all game objects
 var drawtable = []; //array of sprites to draw. the idea is to use index to order objects
 var drawfirst = []; // array of sprites to draw before objects as shadows
 var btn4pressed = false;
-var btn5release = false;
+var btn5pressed = false;
+var btn5released = false;
 var debugmsg = "";
 var debug_t = 0;
 var gamestate = 0; //splash screen, - intro - menu - game - pause
 var step = 0; //count step frames
 var palette = "140c1cea893466707d4e4a4e854c30346524d04648757161597dceca85657f8f9b6daa2cd2aa996dc2cadad45edeeed6";
+var allplayers = [];
+var teamplayers = [];
 
 /** Animator constructor */
 function Anim(name, init, end){
  	var a = new Object();
 	a.name = name; //name of the animation
 	a.init = init; //index for inicial frame
-	a.end = end; //index for last animation frame
+	a.end = end == undefined ? init : end; //index for last animation frame
 	a.speed = anim_default_speed; //anim specific speed, bigger is slower
 	a.loop = true; //loop animation true|false
 	a.count = 0; //count how many loops it did
@@ -66,6 +72,9 @@ function Instance(lcx,lcy){
 	obj.spd = 1; //object spd (using for moving)
  	obj.vspeed = 0; //object vertical speed
 	obj.hspeed = 0; //object horizontal speed
+	obj.children = [];
+	obj.parent = [];
+	obj.mask = {};
 	obj.x = lcx;
 	obj.y = lcy;
 	obj.flip = 0; //(0,1,2,3)
@@ -101,7 +110,8 @@ function Instance(lcx,lcy){
 	obj.getCurrentAnim = function(){ 
 		return this.anim != null ? this.anim.name : "";
 	}
-	obj.getAnim = function(name){ 
+	obj.getAnim = function(name){
+		if (name == undefined) name = this.getCurrentAnim();
 		for (var i=0; i<this.sprites.length; i++){
 			if (name == this.sprites[i].name)
 				return this.sprites[i];
@@ -120,28 +130,46 @@ function init(){
 	var playerRun = new Anim("run",17,20);
 	playerRun.speed = 5; //run animation is faster
 	player.addAnim(playerRun);
+	player.addAnim(new Anim("idle_ball",64,67));
 	player.addAnim(new Anim("pass",33,34));
 	player.addAnim(new Anim("defend",35,36));
+	player.getAnim("defend").speed = 30;
+	player.getAnim("defend").speed = 30;
+	player.addAnim(new Anim("defend_diag",68,69));
+	player.getAnim("defend_diag").speed = 30;
 	player.addAnim(new Anim("shoot",49,51));
-	//player.setAnim("idle");
+	player.getAnim("shoot").loop = false;
+	player.getAnim("shoot").speed = 30;
 	player.name = "player";
+	player.tag = "player";
+
+	coplayer = clone(player);
+	coplayer.x += 14; 
+	coplayer.name = "coplayer";
+
 	//other
 	adv = new Instance(80,24);
 	adv.addAnim(new Anim("idle",5,8));
+	adv.addAnim(new Anim("idle_ball",73,76));
 	adv.addAnim(new Anim("run",21,24));
 	adv.getAnim("run").speed = 5;
 	adv.addAnim(new Anim("pass",37,38));
 	adv.getAnim("pass").speed = 5;
 	adv.getAnim("pass").loop = false;
 	adv.addAnim(new Anim("defend",39,40));
+	adv.addAnim(new Anim("defend_diag",71,72));
 	adv.addAnim(new Anim("shoot",53,55));
-	adv.getAnim("shoot").loop = false
-	adv.setAnim("idle");
-	adv.name = "other";
+	adv.getAnim("shoot").loop = false;
+	adv.getAnim("shoot").speed = 30;	
+	adv.name = "guest_a";
+	adv.tag = "player";
+	coadv = clone(adv);
+	coadv.x -= 14;
+	coadv.name = "guest_b";	
+
 	//ball
-	
 	ball = new Instance(100,70);
-	ball.addAnim(new Anim("idle",25,25));
+	ball.addAnim(new Anim("idle",25));
 	ball.setAnim("idle");
 	ball.name = "ball";
 	ball.owner = null;
@@ -149,14 +177,29 @@ function init(){
 
 	//insert to objects array
 	objects.push(player);
+	objects.push(coplayer);
 	objects.push(adv);
+	objects.push(coadv);
 	objects.push(ball);
 	
 	//draw first objects
-	plShadow = new Instance(player.x, player.y);
-	plShadow.addAnim(new Anim("idle",9,9));
-	plShadow.setAnim("idle");
-	plShadow.name = "player_shadow";	
+	playershadows = [];
+	for (var i = 0; i < objects.length; i++) {
+		if (objects[i].tag == "player"){
+			lcShadow = new Instance(player.x, player.y);
+			lcShadow.addAnim(new Anim("idle",9));
+			lcShadow.addAnim(new Anim("defend",10));
+			lcShadow.addAnim(new Anim("shoot",11));
+			lcShadow.setAnim("idle");
+			lcShadow.name = "player_shadow_"+i;	
+			lcShadow.tag = "player_shadow";
+			objects[i].children.push(lcShadow);
+			drawfirst.push(lcShadow);
+			playershadows.push(lcShadow);
+			allplayers.push(objects[i]);
+		}
+	} 
+		
 	
 	plShadow2 = new Instance(adv.x, adv.y);
 	plShadow2.addAnim(new Anim("idle",9,9));
@@ -167,9 +210,7 @@ function init(){
 	ballShadow.addAnim(new Anim("idle",26,26));
 	ballShadow.setAnim("idle");
 	ballShadow.name = "ball_shadow";
-
-	drawfirst.push(plShadow);
-	drawfirst.push(plShadow2);
+	
 	drawfirst.push(ballShadow);
 
 }
@@ -183,8 +224,6 @@ function drawBegin(){
 
 function draw(){
 	cls(10) //clear tranparent color /bg color
-	//ind x y tcolor scale flip rotate w h
-	//print("READY TO BBJAM!",74,84)
 
 	//draw first stuff
 	drawBegin();
@@ -220,38 +259,48 @@ function draw(){
 }
 
 function inputs(){
-	if(btn(0)){ //up
-		player.y -= player.spd; 
-		player.vspeed = player.spd;
-	} else if(btn(1)){ //down
-		player.y += player.spd; 
-		player.vspeed = player.spd;
-	} else {
-		player.vspeed = 0;
+	//directions
+	if (!btn4pressed && !btn5pressed){ //avoid moving on passing / shooting?
+		if(btn(0)){ //up
+			player.y -= player.spd; 
+			player.vspeed = player.spd;
+		} else if(btn(1)){ //down
+			player.y += player.spd; 
+			player.vspeed = player.spd;
+		} else {
+			player.vspeed = 0;
+		}
+		if(btn(2)){ //left
+			player.x -= player.spd; 
+			player.flip = 1; 
+			player.hspeed = player.spd;
+		}
+		else if(btn(3)){ //right
+			player.x += player.spd; 
+			player.flip = 0; 
+			player.hspeed = player.spd;
+		} else {
+			player.hspeed = 0;
+		}
 	}
-	if(btn(2)){ //left
-		player.x -= player.spd; 
-		player.flip = 1; 
-		player.hspeed = player.spd;
-	}
-	else if(btn(3)){ //right
-		player.x += player.spd; 
-		player.flip = 0; 
-		player.hspeed = player.spd;
-	} else {
-		player.hspeed = 0;
-	}
+
+	//buttons
 	if(btn(4)) { //btnA or keyboar = Z
-	//	ball.state = "pass";
 		btn4pressed = true;
+		player.setAnim("defend_diag");
 	}
-	if (!btn(4)&& btn4pressed){
+	if (!btn(4)&& btn4pressed){ //btn4 released
 		btn4pressed = false;
 		debugmsg = "btn4 released";
 		debug_t = 60;
 	}
 	if(btn(5)) {//btnB or keyboar = X
-		ball.state = "shoot";
+		btn5pressed = true;		
+	}
+	if (!btn(5) && btn5pressed){ //btn5 released
+		btn5pressed = false;
+		btn5released = true;
+		player.state = ball.state = "pass";
 	}
 	if(btn(6)) { //btnX or keyb A
 	}
@@ -260,20 +309,42 @@ function inputs(){
 }
 
 function update(){
+	//update animation states
 	if ((player.hspeed != 0 || player.vspeed != 0) && player.getCurrentAnim() != "run"){
 		player.setAnim("run")
 	}
-	if (player.hspeed == 0 && player.vspeed == 0 && player.getCurrentAnim() != "idle"){
-		player.setAnim("idle")
+	if (player.hspeed == 0 && player.vspeed == 0 && player.getCurrentAnim() != "idle" && player.getCurrentAnim() != "idle_ball" && player.getCurrentAnim() != "defend_diag" && player.getCurrentAnim() != "pass") {
+		if (ball.owner == player) 
+			player.setAnim("idle_ball");
+		else 
+			player.setAnim("idle");
 	}
-	plShadow.x = player.x;
-	plShadow.y = player.y + rescale;
-	plShadow.flip = player.flip;
-	plShadow2.x = adv.x;
-	plShadow2.y = adv.y + rescale;
-	plShadow2.flip = adv.flip;
-	ballShadow.x = ball.x;
-	ballShadow.y = player.y;	
+	if (ball.owner == player) {
+		if (btn5pressed) {
+			player.setAnim("pass");
+		}
+		if (btn5released) {
+			if (player.getCurrentAnim() == "pass") {
+				if (player.getAnim().count > 1){
+					player.state = "idle";
+					player.setAnim("idle");
+					btn5released = false;
+				}
+			}
+		}
+	}
+
+	//update objects states
+	for (var i=0; i<playershadows.length; i++){
+		playershadows[i].x = allplayers[i].x;
+		playershadows[i].y = allplayers[i].y + 1;
+		playershadows[i].flip = allplayers[i].flip;
+		if (allplayers[i].getCurrentAnim() == "shoot")
+			playershadows[i].setAnim("shoot");
+		else if (allplayers[i].getCurrentAnim() == "defend_diag")
+			playershadows[i].setAnim("defend");
+		else playershadows[i].setAnim("idle");
+	}	
 
 	//ball update
 	if (ball.x == player.x && ball.y == player.y) ball.owner = player;
@@ -286,13 +357,11 @@ function update(){
 		case "pass":
 			ball.owner = null;
 			ball.state = "passing";
-			break;
-		
+			break;		
 		case "shoot":
 			ball.owner = null;
 			ball.state = "shooting";	
-			break;
-	
+			break;	
 		default:
 			break;
 	}
@@ -313,6 +382,11 @@ function intro(){
 		intropoint.logoy = 1;
 		intropoint.wait = 0;
 		intropoint.flicker = 0;		
+	}
+	if (btn(4) && intropoint.wait < 100) { //skip
+		intropoint.x = 81;
+		intropoint.wait = 151;
+		intropoint.logox = 46;
 	}
 	if (intropoint.x >80) {
 		//x,y,w,h,color
@@ -350,9 +424,9 @@ function intro(){
 			print("PRESS START", 10, 80);
 		} else if (intropoint.flicker > 120) intropoint.flicker = 0;
 		intropoint.flicker++;
-		if(btn(4) || btn(5)) {			
+		if( btn(5)) {	
 			gamestate = 2;			
-		}
+		}		
 	}
 	intropoint.step++;
 }
@@ -394,6 +468,15 @@ function pal(c0,c1){
 	}else{
 		poke4(32736+c0,c1);
 	}
+}
+
+function clone(obj) {
+    if (null == obj || "object" != typeof obj) return obj;
+    var copy = obj.constructor();
+    for (var attr in obj) {
+        if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+    }
+    return copy;
 }
 
 /**
