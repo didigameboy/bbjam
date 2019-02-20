@@ -442,6 +442,42 @@ function menu(){
 
 }
 
+function pause(){
+	
+}
+
+/**
+ * call init
+ */
+init();
+/**
+ * Main LOOP //60fps
+ */
+function TIC()
+{
+	
+	switch (gamestate) {
+		case 0:
+			intro();
+			break;
+		case 1: 
+			menu();
+			break;
+		case 2:  //gameloop			
+			inputs();//update controls
+			update();//update objects
+			draw(); //update screen
+			break;
+		case 3:
+			pause();
+			break;
+		default:
+			break;
+	}
+	
+ }
+
+ //UTILS
 function approach(start, end, step){
 	if (start < end){
 		return Math.min(start + step, end);
@@ -452,7 +488,6 @@ function approach(start, end, step){
 
 /**
  * EaseQuadin, function from http://www.gizma.com/easing/
- * 
  * t:time, b:start value(0), c:change in value(1), d:duration
  */
 function easeQuadin(t,b,c,d){	
@@ -479,34 +514,3 @@ function clone(obj) {
     }
     return copy;
 }
-
-/**
- * call init
- */
-init();
-/**
- * Main //60fps
- */
-function TIC()
-{
-	
-	switch (gamestate) {
-		case 0:
-			intro();
-			break;
-		case 1: 
-			menu();
-			break;
-		case 2: 
-			//update controls
-			inputs();
-			//update objects
-			update();
-			//update screen
-			draw();
-			break;
-		default:
-			break;
-	}
-	
- }
