@@ -62,7 +62,7 @@ function Anim_ext(name, init, end, speed, loop){
  * @param {*x position} lcx 
  * @param {*y position} lcy 
  */
-function Instance(lcx,lcy){
+function GameObject(x,y){
 	var obj = new Object();
 	obj.name = ""; //used to identify a specific instance
 	obj.tag = ""; //used to specify a group of instances
@@ -75,8 +75,8 @@ function Instance(lcx,lcy){
 	obj.children = [];
 	obj.parent = [];
 	obj.mask = {};
-	obj.x = lcx;
-	obj.y = lcy;
+	obj.x = x;
+	obj.y = y;
 	obj.flip = 0; //(0,1,2,3)
 	obj.tcolor = 0; //index of transparent color
 	obj.scale = rescale; //game rescale, rescale all sprites one by one
@@ -85,26 +85,26 @@ function Instance(lcx,lcy){
 	obj.w = 1;
 	obj.h = 1;
 	obj.depth = 1; //using for z order
-	obj.step = 0; //using to animate
+	obj.framestep = 0; //using to animate
 	obj.addAnim = function(a){this.sprites.push(a)}
 	obj.draw = function(){
 		if (this.sprites.length > 0 && this.visible) {
 			if (this.anim == null) this.anim = this.sprites[0];
-			this.curr = this.anim.init + Math.floor(this.step/this.anim.speed);
+			this.curr = this.anim.init + Math.floor(this.framestep/this.anim.speed);
 			if (this.curr >= (this.anim.end + 1)){
 				this.curr = this.anim.init;
-				this.step = 0;
+				this.framestep = 0;
 				this.anim.count++;
 			}
 			spr(this.curr, this.x, this.y, this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);
 		}
-		this.step++;
+		this.framestep++;
 	}
 	obj.setAnim = function(name){
 		for (var i=0; i<this.sprites.length; i++){
 			if (name == this.sprites[i].name)
 				this.anim = this.sprites[i];
-				this.step = 0;
+				this.framestep = 0;
 		}
 	}
 	obj.getCurrentAnim = function(){ 
@@ -117,6 +117,7 @@ function Instance(lcx,lcy){
 				return this.sprites[i];
 		}
 	}
+	obj.update = function(args){}
 	return obj;
 }
 
@@ -125,7 +126,7 @@ function Instance(lcx,lcy){
  */
 function init(){ 	
 	//player
-	player = new Instance(96, 24);
+	player = new GameObject(96, 24);
 	player.addAnim(new Anim("idle",1,4)); //sprite pivots are top left
 	var playerRun = new Anim("run",17,20);
 	playerRun.speed = 5; //run animation is faster
@@ -148,7 +149,7 @@ function init(){
 	coplayer.name = "coplayer";
 
 	//other
-	adv = new Instance(80,24);
+	adv = new GameObject(80,24);
 	adv.addAnim(new Anim("idle",5,8));
 	adv.addAnim(new Anim("idle_ball",73,76));
 	adv.addAnim(new Anim("run",21,24));
@@ -168,7 +169,7 @@ function init(){
 	coadv.name = "guest_b";	
 
 	//ball
-	ball = new Instance(100,70);
+	ball = new GameObject(100,70);
 	ball.addAnim(new Anim("idle",25));
 	ball.setAnim("idle");
 	ball.name = "ball";
@@ -186,7 +187,7 @@ function init(){
 	playershadows = [];
 	for (var i = 0; i < objects.length; i++) {
 		if (objects[i].tag == "player"){
-			lcShadow = new Instance(player.x, player.y);
+			lcShadow = new GameObject(player.x, player.y);
 			lcShadow.addAnim(new Anim("idle",9));
 			lcShadow.addAnim(new Anim("defend",10));
 			lcShadow.addAnim(new Anim("shoot",11));
@@ -201,12 +202,12 @@ function init(){
 	} 
 		
 	
-	plShadow2 = new Instance(adv.x, adv.y);
+	plShadow2 = new GameObject(adv.x, adv.y);
 	plShadow2.addAnim(new Anim("idle",9,9));
 	plShadow2.setAnim("idle");
 	plShadow2.name = "player_shadow2";
 	
-	ballShadow = new Instance(ball.x, ball.y);
+	ballShadow = new GameObject(ball.x, ball.y);
 	ballShadow.addAnim(new Anim("idle",26,26));
 	ballShadow.setAnim("idle");
 	ballShadow.name = "ball_shadow";
@@ -252,7 +253,7 @@ function draw(){
 	}
 	//debug
 	if (debug_t>0){
-		print(debugmsg,0,80)
+		print(debugmsg, 0, 80);
 		debug_t--	
 	}
 	print("X:"+player.x + " Y:"+player.y, 0, 100);
