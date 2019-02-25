@@ -141,11 +141,13 @@ function init(){
 	player.addAnim(new Anim("shoot",49,51));
 	player.getAnim("shoot").loop = false;
 	player.getAnim("shoot").speed = 30;
+	player.hasBall = false; //created atribute on the fly
 	player.name = "player";
 	player.tag = "player";
+	player.state = "idle";
 
 	coplayer = clone(player);
-	coplayer.x += 14; 
+	coplayer.x = 14; 
 	coplayer.name = "coplayer";
 
 	//other
@@ -164,6 +166,7 @@ function init(){
 	adv.getAnim("shoot").speed = 30;	
 	adv.name = "guest_a";
 	adv.tag = "player";
+	adv.state= "idle";
 	coadv = clone(adv);
 	coadv.x -= 14;
 	coadv.name = "guest_b";	
@@ -174,7 +177,7 @@ function init(){
 	ball.setAnim("idle");
 	ball.name = "ball";
 	ball.owner = null;
-	ball.state = "";
+	ball.state = "idle";
 
 	//insert to objects array
 	objects.push(player);
@@ -199,9 +202,7 @@ function init(){
 			playershadows.push(lcShadow);
 			allplayers.push(objects[i]);
 		}
-	} 
-		
-	
+	} 	
 	plShadow2 = new GameObject(adv.x, adv.y);
 	plShadow2.addAnim(new Anim("idle",9,9));
 	plShadow2.setAnim("idle");
@@ -213,6 +214,120 @@ function init(){
 	ballShadow.name = "ball_shadow";
 	
 	drawfirst.push(ballShadow);
+
+	player.update = function(){
+		if (!btn4pressed && !btn5pressed){ //avoid moving on passing / shooting?
+			if(btn(0)){ //up
+				player.y -= player.spd; 
+				player.vspeed = player.spd;
+			} else if(btn(1)){ //down
+				player.y += player.spd; 
+				player.vspeed = player.spd;
+			} else {
+				player.vspeed = 0;
+			}
+			if(btn(2)){ //left
+				player.x -= player.spd; 
+				player.flip = 1; 
+				player.hspeed = player.spd;
+			}
+			else if(btn(3)){ //right
+				player.x += player.spd; 
+				player.flip = 0; 
+				player.hspeed = player.spd;
+			} else {
+				player.hspeed = 0;
+			}
+		}
+		//buttons
+		if(btn(4)) { //btnA or keyboar = Z
+			btn4pressed = true;
+			if (player.hasBall) {
+				player.setAnim("shoot");
+				player.state = "shooting";
+			} else {
+				player.state = "defending";
+				player.setAnim("defend_diag");
+			}
+		}
+		if (!btn(4)&& btn4pressed){ //btn4 released
+			btn4pressed = false;
+			debugmsg = "btn4 released";
+			debug_t = 60;
+		}
+		if(btn(5)) {//btnB or keyboar = X
+			btn5pressed = true;		
+		}
+		if (!btn(5) && btn5pressed){ //btn5 released
+			btn5pressed = false;
+			btn5released = true;
+			if (player.hasBall) {
+				player.state = ball.state = "pass";
+			}			
+		}
+		if(btn(6)) { //btnX or keyb A
+		}
+		if(btn(7)) {//btnY or keyb S
+		}
+		//update anims
+		if ((player.hspeed != 0 || player.vspeed != 0) && player.getCurrentAnim() != "run"){
+			player.setAnim("run")
+		}
+		if (player.hspeed == 0 && player.vspeed == 0 && player.getCurrentAnim() != "idle" && player.getCurrentAnim() != "idle_ball" && player.getCurrentAnim() != "defend_diag" && player.getCurrentAnim() != "pass") {
+			if (ball.owner == player) 
+				player.setAnim("idle_ball");
+			else 
+				player.setAnim("idle");
+		}
+		if (ball.owner == player) {
+			if (btn5pressed) {
+				player.setAnim("pass");
+			}
+			if (btn5released) {
+				if (player.getCurrentAnim() == "pass") {
+					if (player.getAnim().count > 1){
+						player.state = "idle";
+						player.setAnim("idle");
+						btn5released = false;
+					}
+				}
+			}
+		}
+	}
+	ball.update = function(){
+		if (ball.state = "idle") 
+			for (var i=0; i<allplayers.length; i++){
+				if(ball.x == allplayers[i].x && ball.y == allplayers[i].y) {
+					ball.owner = allplayers[i];
+					allplayers[i].hasBall = true;
+					ball.state = "hands";
+				}
+			}	
+		
+		/*if (ball.owner != null) { //sprite size == 8
+			
+		}*/
+	
+		switch (ball.state) {
+				case "idle":
+					break;
+				case "hands":
+					var yflip = ball.owner.flip > 0 ? 12 : 0;
+					ball.x = ball.owner.x + yflip;
+					ball.y = ball.owner.y //+ Math.floor(ball.owner.framestep/ball.owner.getAnim().speed);
+					break;
+			case "pass":
+				ball.owner = null;
+				ball.state = "passing";
+				break;		
+			case "shoot":
+				ball.owner = null;
+				ball.state = "shooting";	
+				break;	
+			default:
+				break;
+		}
+	}
 
 }
 
@@ -259,83 +374,13 @@ function draw(){
 	print("X:"+player.x + " Y:"+player.y, 0, 100);
 }
 
-function inputs(){
-	//directions
-	if (!btn4pressed && !btn5pressed){ //avoid moving on passing / shooting?
-		if(btn(0)){ //up
-			player.y -= player.spd; 
-			player.vspeed = player.spd;
-		} else if(btn(1)){ //down
-			player.y += player.spd; 
-			player.vspeed = player.spd;
-		} else {
-			player.vspeed = 0;
-		}
-		if(btn(2)){ //left
-			player.x -= player.spd; 
-			player.flip = 1; 
-			player.hspeed = player.spd;
-		}
-		else if(btn(3)){ //right
-			player.x += player.spd; 
-			player.flip = 0; 
-			player.hspeed = player.spd;
-		} else {
-			player.hspeed = 0;
-		}
-	}
-
-	//buttons
-	if(btn(4)) { //btnA or keyboar = Z
-		btn4pressed = true;
-		player.setAnim("defend_diag");
-	}
-	if (!btn(4)&& btn4pressed){ //btn4 released
-		btn4pressed = false;
-		debugmsg = "btn4 released";
-		debug_t = 60;
-	}
-	if(btn(5)) {//btnB or keyboar = X
-		btn5pressed = true;		
-	}
-	if (!btn(5) && btn5pressed){ //btn5 released
-		btn5pressed = false;
-		btn5released = true;
-		player.state = ball.state = "pass";
-	}
-	if(btn(6)) { //btnX or keyb A
-	}
-	if(btn(7)) {//btnY or keyb S
-	}
-}
-
 function update(){
 	//update animation states
-	if ((player.hspeed != 0 || player.vspeed != 0) && player.getCurrentAnim() != "run"){
-		player.setAnim("run")
+	
+	for (var i=0; i<objects.length; i++) {
+		objects[i].update();
 	}
-	if (player.hspeed == 0 && player.vspeed == 0 && player.getCurrentAnim() != "idle" && player.getCurrentAnim() != "idle_ball" && player.getCurrentAnim() != "defend_diag" && player.getCurrentAnim() != "pass") {
-		if (ball.owner == player) 
-			player.setAnim("idle_ball");
-		else 
-			player.setAnim("idle");
-	}
-	if (ball.owner == player) {
-		if (btn5pressed) {
-			player.setAnim("pass");
-		}
-		if (btn5released) {
-			if (player.getCurrentAnim() == "pass") {
-				if (player.getAnim().count > 1){
-					player.state = "idle";
-					player.setAnim("idle");
-					btn5released = false;
-				}
-			}
-		}
-	}
-
-	//update objects states
+	//update shadows states
 	for (var i=0; i<playershadows.length; i++){
 		playershadows[i].x = allplayers[i].x;
 		playershadows[i].y = allplayers[i].y + 1;
@@ -345,27 +390,8 @@ function update(){
 		else if (allplayers[i].getCurrentAnim() == "defend_diag")
 			playershadows[i].setAnim("defend");
 		else playershadows[i].setAnim("idle");
-	}	
-
-	//ball update
-	if (ball.x == player.x && ball.y == player.y) ball.owner = player;
-	if (ball.owner != null) {
-		ball.x = ball.owner.x;
-		ball.y = ball.owner.y;
 	}
 
-	switch (ball.state) {
-		case "pass":
-			ball.owner = null;
-			ball.state = "passing";
-			break;		
-		case "shoot":
-			ball.owner = null;
-			ball.state = "shooting";	
-			break;	
-		default:
-			break;
-	}
 }
 
 function splashscreen(){
@@ -464,7 +490,6 @@ function TIC()
 			menu();
 			break;
 		case 2:  //gameloop			
-			inputs();//update controls
 			update();//update objects
 			draw(); //update screen
 			break;
