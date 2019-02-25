@@ -126,7 +126,7 @@ function GameObject(x,y){
  */
 function init(){ 	
 	//player
-	player = new GameObject(96, 24);
+	player = new GameObject(96, 70);
 	player.addAnim(new Anim("idle",1,4)); //sprite pivots are top left
 	var playerRun = new Anim("run",17,20);
 	playerRun.speed = 5; //run animation is faster
@@ -147,7 +147,8 @@ function init(){
 	player.state = "idle";
 
 	coplayer = clone(player);
-	coplayer.x = 14; 
+	coplayer.x = 96; 
+	coplayer.x = 24; 
 	coplayer.name = "coplayer";
 
 	//other
@@ -295,34 +296,35 @@ function init(){
 		}
 	}
 	ball.update = function(){
-		if (ball.state = "idle") 
+		if (ball.state == "idle") {
 			for (var i=0; i<allplayers.length; i++){
 				if(ball.x == allplayers[i].x && ball.y == allplayers[i].y) {
 					ball.owner = allplayers[i];
 					allplayers[i].hasBall = true;
 					ball.state = "hands";
 				}
-			}	
-		
+			}
+		} 
 		/*if (ball.owner != null) { //sprite size == 8
 			
 		}*/
 	
 		switch (ball.state) {
-				case "idle":
-					break;
-				case "hands":
-					var yflip = ball.owner.flip > 0 ? 12 : 0;
-					ball.x = ball.owner.x + yflip;
-					ball.y = ball.owner.y //+ Math.floor(ball.owner.framestep/ball.owner.getAnim().speed);
-					break;
+			case "idle":
+				break;
+			case "hands":
+				var xflip = ball.owner.flip > 0 ? 12 : 0;
+				ball.x = ball.owner.x + xflip;
+				ball.y = ball.owner.y + 3*rescale + Math.floor(ball.owner.framestep/ball.owner.getAnim().speed)*rescale;
+				//ball.rotate = Math.floor(ball.owner.framestep/ball.owner.getAnim().speed) % 4
+				break;
 			case "pass":
 				ball.owner = null;
-				ball.state = "passing";
+				ball.state = "pass";
 				break;		
 			case "shoot":
 				ball.owner = null;
-				ball.state = "shooting";	
+				ball.state = "shoot";	
 				break;	
 			default:
 				break;
