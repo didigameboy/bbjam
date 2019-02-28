@@ -36,7 +36,6 @@ var step = 0; //count step frames
 var palette = "140c1cea893466707d4e4a4e854c30346524d04648757161597dceca85657f8f9b6daa2cd2aa996dc2cadad45edeeed6";
 var allplayers = [];
 var teamplayers = [];
-var floatx = 0.111999999999999999999999999999999999999999999999999999999;
 var sintheta = 0;
 var costheta = 0;
 
@@ -332,15 +331,16 @@ function init(){
 				ball.state = "passing";
 				ball.target = coplayer;
 				player.hasBall = false;
-				var x_delta = Math.abs(ball.target.x - ball.x);
-				var y_delta = Math.abs(ball.target.y - ball.y);
+				var x_delta = (ball.target.x - ball.x);
+				var y_delta = (ball.target.y - ball.y);
 				var angleRadians = Math.atan2(y_delta, x_delta);
-				theta = angleRadians * 180 / Math.PI;
+				trace("angleRadians="+angleRadians)
+				theta = angleRadians;
 				ball.floatx = ball.x;
 				ball.floaty = ball.y;
-				trace("theta : " + theta);
-				trace("Math.cos(theta)=" + Math.cos(theta));
-				trace("Math.sin(theta)=" + Math.sin(theta));
+				costheta = Math.abs(Math.cos(theta).toFixed(3));				
+				sintheta = Math.abs(Math.sin(theta).toFixed(3));
+				ball.spd = 2;
 				break;		
 			case "passing": //go to target
 				if (ball.x == ball.target.x && ball.y == ball.target.y) {
@@ -352,19 +352,10 @@ function init(){
 					player.hasBall = true;
 					player.state = "idle";
 				} else {
-					ball.floatx = approach(ball.floatx, ball.target.x, Math.cos(theta));					
-					ball.floaty = approach(ball.floaty, ball.target.y, Math.sin(theta))
-					ball.x = Math.round(ball.floatx);
-					ball.y = Math.round(ball.floaty);
-				
-					//floatx = floatx + Math.sin(theta);
-					trace("floatx=" + floatx);
-					costheta = Math.cos(theta);
-					sintheta = Math.sin(theta);
-					trace("sintheta="+sintheta);
-					trace("costheta="+costheta);
-					trace("floatx + Math.cos(theta)=" + (floatx + costheta) );
-					trace("floatx + Math.sin(theta)=" + (floatx + sintheta) );
+					ball.floatx = approach(ball.floatx, ball.target.x, costheta*ball.spd);
+					ball.floaty = approach(ball.floaty, ball.target.y, sintheta*ball.spd);
+					ball.x = ball.floatx;
+					ball.y = ball.floaty;
 				}
 				break;		
 			case "shoot":
@@ -395,7 +386,7 @@ function draw() {
 		drawtable[i] = undefined;
 	}
 	for (var i = 0; i < objects.length; i++) {
-		var depth = objects[i].y; //if already has a object at this index/depth/y		 
+		var depth = Math.floor(objects[i].y); //if already has a object at this index/depth/y		 
 		if (depth < 0) depth = 0; //cant have negative array index 
 		while (typeof (drawtable[depth]) != "undefined") {
 			depth++;
@@ -590,3 +581,11 @@ function clone(obj) {
     }
     return copy;
 }
+
+function toDegrees (angle) {
+	return angle * (180 / Math.PI);
+  }
+
+function toRadians (angle) {
+	return angle * (Math.PI / 180);
+  }
