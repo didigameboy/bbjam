@@ -36,6 +36,9 @@ var step = 0; //count step frames
 var palette = "140c1cea893466707d4e4a4e854c30346524d04648757161597dceca85657f8f9b6daa2cd2aa996dc2cadad45edeeed6";
 var allplayers = [];
 var teamplayers = [];
+var floatx = 0.111999999999999999999999999999999999999999999999999999999;
+var sintheta = 0;
+var costheta = 0;
 
 /** Animator constructor */
 function Anim(name, init, end){
@@ -178,7 +181,10 @@ function init(){
 	ball.setAnim("idle");
 	ball.name = "ball";
 	ball.owner = undefined;
+	ball.target = undefined;
 	ball.state = "idle";
+	ball.floatx = ball.x;
+	ball.floaty = ball.y;
 
 	//insert to objects array
 	objects.push(player);
@@ -253,8 +259,8 @@ function init(){
 		}
 		if (!btn(4)&& btn4pressed){ //btn4 released
 			btn4pressed = false;
-			debugmsg = "btn4 released";
-			debug_t = 60;
+			//debugmsg = "btn4 released";
+			//debug_t = 60;
 		}
 		if(btn(5)) {//btnB or keyboar = X
 			btn5pressed = true;		
@@ -308,7 +314,9 @@ function init(){
 		/*if (ball.owner != null) { //sprite size == 8
 			
 		}*/
-	
+		
+		var theta = 0; //angle in degrees
+		
 		switch (ball.state) {
 			case "idle":
 				break;
@@ -321,12 +329,43 @@ function init(){
 			case "pass":
 				//create target
 				ball.owner = undefined;
-				ball.state = "pass";
+				ball.state = "passing";
+				ball.target = coplayer;
+				player.hasBall = false;
+				var x_delta = Math.abs(ball.target.x - ball.x);
+				var y_delta = Math.abs(ball.target.y - ball.y);
+				var angleRadians = Math.atan2(y_delta, x_delta);
+				theta = angleRadians * 180 / Math.PI;
+				ball.floatx = ball.x;
+				ball.floaty = ball.y;
+				trace("theta : " + theta);
+				trace("Math.cos(theta)=" + Math.cos(theta));
+				trace("Math.sin(theta)=" + Math.sin(theta));
 				break;		
 			case "passing": //go to target
-				//ball.owner = null;
-				//end pass
-				ball.state = "idle";
+				if (ball.x == ball.target.x && ball.y == ball.target.y) {
+					ball.owner = ball.target;
+					ball.state = "idle";
+					var aux = player;
+					player = coplayer;
+					coplayer = aux;
+					player.hasBall = true;
+					player.state = "idle";
+				} else {
+					ball.floatx = approach(ball.floatx, ball.target.x, Math.cos(theta));					
+					ball.floaty = approach(ball.floaty, ball.target.y, Math.sin(theta))
+					ball.x = Math.round(ball.floatx);
+					ball.y = Math.round(ball.floaty);
+				
+					//floatx = floatx + Math.sin(theta);
+					trace("floatx=" + floatx);
+					costheta = Math.cos(theta);
+					sintheta = Math.sin(theta);
+					trace("sintheta="+sintheta);
+					trace("costheta="+costheta);
+					trace("floatx + Math.cos(theta)=" + (floatx + costheta) );
+					trace("floatx + Math.sin(theta)=" + (floatx + sintheta) );
+				}
 				break;		
 			case "shoot":
 				ball.owner = undefined;
@@ -336,7 +375,6 @@ function init(){
 				break;
 		}
 	}
-
 }
 
 /** draw stuff before, objects and stuff as shadows */
@@ -365,7 +403,6 @@ function draw() {
 		objects[i].depth = depth;
 		//store the object athe the right index/depth/y --put the ball on first object to be draw
 		if (objects[i].name == "ball" && typeof (objects[i].owner) != 'undefined') { //the ball receive the depth player plus something
-			trace("have the ball player " + objects[i].owner);
 			depth = objects[i].owner.depth;
 			while (typeof (drawtable[depth]) != "undefined") {
 				depth++;
@@ -387,7 +424,7 @@ function draw() {
 		print(debugmsg, 0, 80);
 		debug_t--
 	}
-	print("X:" + player.x + " Y:" + player.y, 0, 100);
+	print("X:" + ball.x + " Y:" + ball.y, 0, 100);
 
 }
 
@@ -408,7 +445,6 @@ function update(){
 			playershadows[i].setAnim("defend");
 		else playershadows[i].setAnim("idle");
 	}
-
 }
 
 function splashscreen(){
@@ -541,11 +577,9 @@ function easeQuadin(t,b,c,d){
  * https://github.com/nesbox/TIC-80/wiki/Code-examples-and-snippets#palette-swapping
  */
 function pal(c0,c1){
-	if(c0===undefined&&c1===undefined){
-		for(var i=0;i<16;i++){poke4(32736+i,i);}
-	}else{
-		poke4(32736+c0,c1);
-	}
+	if(c0 === undefined && c1 === undefined){
+		for(var i=0; i<16; i++){poke4(32736 + i, i)}
+	} else poke4(32736+c0,c1);	
 }
 
 function clone(obj) {
