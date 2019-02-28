@@ -177,7 +177,7 @@ function init(){
 	ball.addAnim(new Anim("idle",25));
 	ball.setAnim("idle");
 	ball.name = "ball";
-	ball.owner = null;
+	ball.owner = undefined;
 	ball.state = "idle";
 
 	//insert to objects array
@@ -319,11 +319,17 @@ function init(){
 				//ball.rotate = Math.floor(ball.owner.framestep/ball.owner.getAnim().speed) % 4
 				break;
 			case "pass":
-				ball.owner = null;
+				//create target
+				ball.owner = undefined;
 				ball.state = "pass";
 				break;		
+			case "passing": //go to target
+				//ball.owner = null;
+				//end pass
+				ball.state = "idle";
+				break;		
 			case "shoot":
-				ball.owner = null;
+				ball.owner = undefined;
 				ball.state = "shoot";	
 				break;	
 			default:
@@ -340,40 +346,49 @@ function drawBegin(){
 	}
 }
 
-function draw(){
+function draw() {
 	cls(10) //clear tranparent color /bg color
 
 	//draw first stuff
 	drawBegin();
 
 	//organize drawtable simulate layers with the draw call
-	for (var i=0; i<drawtable.length; i++){
+	for (var i = 0; i < drawtable.length; i++) {
 		drawtable[i] = undefined;
 	}
-	for (var i=0; i<objects.length; i++) {
-		var depth = objects[i].y; //if already has a object at this index/depth/y
+	for (var i = 0; i < objects.length; i++) {
+		var depth = objects[i].y; //if already has a object at this index/depth/y		 
 		if (depth < 0) depth = 0; //cant have negative array index 
-		while (typeof(drawtable[depth]) != "undefined") {
+		while (typeof (drawtable[depth]) != "undefined") {
 			depth++;
 		}
-		//store the object athe the right index/depth/y
+		objects[i].depth = depth;
+		//store the object athe the right index/depth/y --put the ball on first object to be draw
+		if (objects[i].name == "ball" && typeof (objects[i].owner) != 'undefined') { //the ball receive the depth player plus something
+			trace("have the ball player " + objects[i].owner);
+			depth = objects[i].owner.depth;
+			while (typeof (drawtable[depth]) != "undefined") {
+				depth++;
+			}
+		}
 		drawtable[depth] = objects[i];
 	}
 	//draw objects
 	var aux = 110;
-	for (var i=0; i<drawtable.length; i++) {
-		if (typeof(drawtable[i]) != "undefined") {
+	for (var i = 0; i < drawtable.length; i++) {
+		if (typeof (drawtable[i]) != "undefined") {
 			drawtable[i].draw();
 			//print(drawtable[i].name + ".draw() ", 1, aux);
-			aux +=10;
+			aux += 10;
 		}
 	}
 	//debug
-	if (debug_t>0){
+	if (debug_t > 0) {
 		print(debugmsg, 0, 80);
-		debug_t--	
+		debug_t--
 	}
-	print("X:"+player.x + " Y:"+player.y, 0, 100);
+	print("X:" + player.x + " Y:" + player.y, 0, 100);
+
 }
 
 function update(){
