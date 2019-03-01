@@ -184,6 +184,7 @@ function init(){
 	ball.state = "idle";
 	ball.floatx = ball.x;
 	ball.floaty = ball.y;
+	ball.z = ball.y;
 
 	//insert to objects array
 	objects.push(player);
@@ -218,9 +219,12 @@ function init(){
 	ballShadow.addAnim(new Anim("idle",26,26));
 	ballShadow.setAnim("idle");
 	ballShadow.name = "ball_shadow";
+	ballShadow.tag = "shadow";	
+	ball.children.push(ballShadow);
 	
 	drawfirst.push(ballShadow);
 
+	//update/step/tic functions
 	player.update = function(){
 		if (!btn4pressed && !btn5pressed){ //avoid moving on passing / shooting?
 			if(btn(0)){ //up
@@ -310,12 +314,7 @@ function init(){
 				}
 			}
 		} 
-		/*if (ball.owner != null) { //sprite size == 8
-			
-		}*/
-		
 		var theta = 0; //angle in degrees
-		
 		switch (ball.state) {
 			case "idle":
 				break;
@@ -323,13 +322,17 @@ function init(){
 				var xflip = ball.owner.flip > 0 ? 12 : 0;
 				ball.x = ball.owner.x + xflip;
 				ball.y = ball.owner.y + 3*rescale + Math.floor(ball.owner.framestep/ball.owner.getAnim().speed)*rescale;
+				ballShadow.x = ball.x;
+				ballShadow.y = ball.owner.y + 7*rescale;
 				//ball.rotate = Math.floor(ball.owner.framestep/ball.owner.getAnim().speed) % 4
 				break;
 			case "pass":
 				//create target
 				ball.owner = undefined;
 				ball.state = "passing";
-				ball.target = coplayer;
+				ball.target = new GameObject();
+				ball.target.x = coplayer.x;
+				ball.target.y =  coplayer.y + (2*rescale); //a little under the player pivot
 				player.hasBall = false;
 				var x_delta = (ball.target.x - ball.x);
 				var y_delta = (ball.target.y - ball.y);
@@ -343,19 +346,23 @@ function init(){
 				ball.spd = 2;
 				break;		
 			case "passing": //go to target
-				if (ball.x == ball.target.x && ball.y == ball.target.y) {
-					ball.owner = ball.target;
-					ball.state = "idle";
+				if (ball.x == ball.target.x && ball.y == ball.target.y) { //found coplayer
+					ball.owner = coplayer; //nocaso do gameplay quem tem a bola controla! 1player
+					ball.state = "hands";
+					ball.target = undefined;
+					// troca de controle
 					var aux = player;
 					player = coplayer;
-					coplayer = aux;
+					coplayer = aux;					
 					player.hasBall = true;
-					player.state = "idle";
-				} else {
+					player.state = "idle";					
+				} else {					
 					ball.floatx = approach(ball.floatx, ball.target.x, costheta*ball.spd);
 					ball.floaty = approach(ball.floaty, ball.target.y, sintheta*ball.spd);
 					ball.x = ball.floatx;
 					ball.y = ball.floaty;
+					ballShadow.x = ball.x;
+					ballShadow.y = ball.y + 4*rescale;
 				}
 				break;		
 			case "shoot":
