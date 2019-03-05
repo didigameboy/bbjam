@@ -3,6 +3,12 @@
 // desc:   basket ball action gam3z
 // script: js
 
+//add basket and terrain with map()
+//ajust ball position relative to player state, bouncing;idle/passing
+//addded pass mechanic - solved problems with js rads and angles. use atan to find angle, use cons and sin to ajust vectors in passing line
+//added ball shadow
+//added sound() funcions thats calculate time to try not overlap sound call (its a isPlaying the sound so dont play it)
+//putted update opbjects function
 //optimized players shadow constructor and update
 //added parent/children obj
 //added skip intro button
@@ -186,12 +192,19 @@ function init(){
 	ball.floaty = ball.y;
 	ball.z = ball.y;
 
+	//17 - 61
+	obj_basket_r = new GameObject(17,61);
+	obj_basket_r.tag = "basket";
+	obj_basket_r.name = "basket_r";
+	obj_basket_r.draw = drawBasket;
+
 	//insert to objects array
 	objects.push(player);
 	objects.push(coplayer);
 	objects.push(adv);
 	objects.push(coadv);
 	objects.push(ball);
+	objects.push(obj_basket_r);
 	
 	//draw first objects
 	playershadows = [];
@@ -319,15 +332,20 @@ function init(){
 			case "idle":
 				break;
 			case "hands":
-				var xflip = ball.owner.flip > 0 ? 12 : 0;
+				var xflip = ball.owner.flip > 0 ? 6*rescale : 0;				
+				if (player.getCurrentAnim() == "pass") {
+					xflip = ball.owner.flip == 0 ? 8*rescale : -3;					
+				}
 				ball.x = ball.owner.x + xflip;
+				//BOUNCING BALL 
 				ball.y = ball.owner.y + 3*rescale + Math.floor(ball.owner.framestep/ball.owner.getAnim().speed)*rescale;
+				if (ball.owner.framestep == 1) sound(0, 0.3);//sfx(0); //TODO is playing?
 				ballShadow.x = ball.x;
-				ballShadow.y = ball.owner.y + 7*rescale;
+				ballShadow.y = ball.owner.y + 7*rescale;				
 				//ball.rotate = Math.floor(ball.owner.framestep/ball.owner.getAnim().speed) % 4
 				break;
 			case "pass":
-				//create target
+				//create target				
 				ball.owner = undefined;
 				ball.state = "passing";
 				ball.target = new GameObject();
@@ -337,13 +355,14 @@ function init(){
 				var x_delta = (ball.target.x - ball.x);
 				var y_delta = (ball.target.y - ball.y);
 				var angleRadians = Math.atan2(y_delta, x_delta);
-				trace("angleRadians="+angleRadians)
+				//trace("angleRadians="+angleRadians)
 				theta = angleRadians;
 				ball.floatx = ball.x;
 				ball.floaty = ball.y;
 				costheta = Math.abs(Math.cos(theta).toFixed(3));				
 				sintheta = Math.abs(Math.sin(theta).toFixed(3));
 				ball.spd = 2;
+				sfx(7)	
 				break;		
 			case "passing": //go to target
 				if (ball.x == ball.target.x && ball.y == ball.target.y) { //found coplayer
@@ -355,7 +374,7 @@ function init(){
 					player = coplayer;
 					coplayer = aux;					
 					player.hasBall = true;
-					player.state = "idle";					
+					player.state = "idle";									
 				} else {					
 					ball.floatx = approach(ball.floatx, ball.target.x, costheta*ball.spd);
 					ball.floaty = approach(ball.floaty, ball.target.y, sintheta*ball.spd);
@@ -377,6 +396,8 @@ function init(){
 
 /** draw stuff before, objects and stuff as shadows */
 function drawBegin(){
+	//map [x=0 y=0] [w=30 h=17] [sx=0 sy=0] [colorkey=-1] [scale=1] [remap=nil]
+	map(4,3, 19, 6, 10, 20, 0, rescale, null);
 	for (var i=0; i<drawfirst.length; i++){
 		drawfirst[i].draw();
 	}
@@ -471,8 +492,8 @@ function intro(){
 		//rect(intropoint.x,intropoint.y-2,4,40,5);		
 		//id x y [colorkey=-1] [scale=1] [flip=0] [rotate=0] [w=1 h=1]
 		//slide char
-		if (intropoint.step % 3 == 0) spr(88, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11); //fliker shadow
-		spr(80, intropoint.x, intropoint.y, 0, 1, 0,0,8,11);
+		if (intropoint.step % 3 == 0) spr(200, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11); //fliker shadow
+		spr(192, intropoint.x, intropoint.y, 0, 1, 0,0,8,11);
 		var slidespd = intropoint.x > 120 ? 2 : 1;				
 		intropoint.x -=slidespd;		
 	} else if (intropoint.logox < 45){ //those ifs are like while since they are in game loop ;>
@@ -511,8 +532,15 @@ function intro(){
 
 function drawtitlescreen(p){
 	spr(384, intropoint.logox, intropoint.logoy, 0, 1, 0,0, 16, 4);					 
-	if (intropoint.step % 3 == 0 && p == undefined) spr(88, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11);
-	spr(80, intropoint.x,intropoint.y, 0, 1, 0,0,8,11);
+	if (intropoint.step % 3 == 0 && p == undefined) spr(200, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11);
+	spr(192, intropoint.x,intropoint.y, 0, 1, 0,0,8,11);
+}
+
+function drawBasket(xb, yb, s){
+	//id x y [colorkey=-1] [scale=1] [flip=0] [rotate=0] [w=1 h=1]
+	xb = 20; yb = 54;
+	spr(59, xb, yb, 0, rescale, 0,0,1,1);
+	spr(27, xb, yb-24*rescale, 0, rescale, 0,0,3,3);
 }
 
 function menu(){
@@ -596,3 +624,18 @@ function toDegrees (angle) {
 function toRadians (angle) {
 	return angle * (Math.PI / 180);
   }
+
+function sound(id, t) {
+	if (typeof (playingsfx) == "undefined") playingsfx = [];
+	if (playingsfx[id] == undefined){
+		sfx(0);
+		playingsfx[id] = Date.now();
+	} else {
+		t = t === undefined ? 1 : t;
+		if (((Date.now() - playingsfx[id]) / 1000) > t) {
+			sfx(0);
+			playingsfx[id] = Date.now();
+		} 
+	}
+	
+}
