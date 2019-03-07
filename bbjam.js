@@ -3,6 +3,7 @@
 // desc:   basket ball action gam3z
 // script: js
 
+//add camera (still buggy)
 //add basket and terrain with map()
 //ajust ball position relative to player state, bouncing;idle/passing
 //addded pass mechanic - solved problems with js rads and angles. use atan to find angle, use cons and sin to ajust vectors in passing line
@@ -104,7 +105,15 @@ function GameObject(x,y){
 				this.framestep = 0;
 				this.anim.count++;
 			}
-			spr(this.curr, this.x, this.y, this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);
+			if (typeof(camera) != "undefined") {
+				if (camera.contains(this)){
+					spr(this.curr, this.x - camera.x, this.y - camera.y, this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);	
+				} else {
+					spr(this.curr, this.x + camera.x, this.y + camera.y, this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);
+				}				
+			} else {
+				spr(this.curr, this.x, this.y , this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);
+			}
 		}
 		this.framestep++;
 	}
@@ -160,7 +169,7 @@ function init(){
 	coplayer.name = "coplayer";
 
 	//other
-	adv = new GameObject(80,24);
+	adv = new GameObject(120, 16);
 	adv.addAnim(new Anim("idle",5,8));
 	adv.addAnim(new Anim("idle_ball",73,76));
 	adv.addAnim(new Anim("run",21,24));
@@ -193,7 +202,7 @@ function init(){
 	ball.z = ball.y;
 
 	//17 - 61
-	obj_basket_r = new GameObject(17,61);
+	obj_basket_r = new GameObject(19,54);
 	obj_basket_r.tag = "basket";
 	obj_basket_r.name = "basket_r";
 	obj_basket_r.draw = drawBasket;
@@ -324,6 +333,7 @@ function init(){
 					ball.owner = allplayers[i];
 					allplayers[i].hasBall = true;
 					ball.state = "hands";
+					camera.target.push(ball);
 				}
 			}
 		} 
@@ -352,6 +362,7 @@ function init(){
 				ball.target.x = coplayer.x;
 				ball.target.y =  coplayer.y + (2*rescale); //a little under the player pivot
 				player.hasBall = false;
+				camera.remove(ball);
 				var x_delta = (ball.target.x - ball.x);
 				var y_delta = (ball.target.y - ball.y);
 				var angleRadians = Math.atan2(y_delta, x_delta);
@@ -374,6 +385,7 @@ function init(){
 					player = coplayer;
 					coplayer = aux;					
 					player.hasBall = true;
+					camera.target.push(ball)
 					player.state = "idle";									
 				} else {					
 					ball.floatx = approach(ball.floatx, ball.target.x, costheta*ball.spd);
@@ -392,12 +404,35 @@ function init(){
 				break;
 		}
 	}
+
+	camera = new GameObject(120, 68); //init centered camera since res 240*136
+	camera.target = [];
+	camera.target.push(player);
+	camera.contains = function(e){
+		var res = false;
+		for (var i=0; i<this.target.length; i++){
+			if (e == this.target[i]) res = true;
+		}
+		return res;
+	}
+	camera.remove = function(e){
+		for (var i=0; i<this.target.length; i++){
+			if (e == this.target[i]) this.target.splice(i, 1) ;
+		}
+	}
+
 }
 
 /** draw stuff before, objects and stuff as shadows */
 function drawBegin(){
 	//map [x=0 y=0] [w=30 h=17] [sx=0 sy=0] [colorkey=-1] [scale=1] [remap=nil]
-	map(4,3, 19, 6, 10, 20, 0, rescale, null);
+	//map(4,3, 19, 6, 10, 20, 0, rescale, null);
+	if (typeof(camera) != "undefined"){
+		map(4,3, 19, 6, camera.x, camera.y, 0, rescale, null);
+	} else {
+		map(4,3, 19, 6, 10, 20, 0, rescale, null);
+	}
+	
 	for (var i=0; i<drawfirst.length; i++){
 		drawfirst[i].draw();
 	}
@@ -463,6 +498,11 @@ function update(){
 		else if (allplayers[i].getCurrentAnim() == "defend_diag")
 			playershadows[i].setAnim("defend");
 		else playershadows[i].setAnim("idle");
+	}
+	//update camera position (centered on player)
+	if (typeof(camera) != "undefined") {	
+		camera.x = player.x - 120;
+		camera.y = player.y -  68;
 	}
 }
 
@@ -536,9 +576,13 @@ function drawtitlescreen(p){
 	spr(192, intropoint.x,intropoint.y, 0, 1, 0,0,8,11);
 }
 
-function drawBasket(xb, yb, s){
+function drawBasket(xb, yb, s){	
+	xb = 22; yb = 54;
+	//rect x y w h color
+	rect(xb, yb+14,4*rescale, 2*rescale, 2);
+	//pin point under basket (represent basket deph)
+	rect(58, 66, 3*rescale, 2*rescale, 2);
 	//id x y [colorkey=-1] [scale=1] [flip=0] [rotate=0] [w=1 h=1]
-	xb = 20; yb = 54;
 	spr(59, xb, yb, 0, rescale, 0,0,1,1);
 	spr(27, xb, yb-24*rescale, 0, rescale, 0,0,3,3);
 }
@@ -637,5 +681,8 @@ function sound(id, t) {
 			playingsfx[id] = Date.now();
 		} 
 	}
-	
+}
+
+function lerp(a,b,t){
+	return (1-t)*a + t*b;
 }
