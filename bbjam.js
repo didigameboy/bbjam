@@ -105,12 +105,8 @@ function GameObject(x,y){
 				this.framestep = 0;
 				this.anim.count++;
 			}
-			if (typeof(camera) != "undefined") {
-				if (camera.contains(this)){
-					spr(this.curr, this.x - camera.x, this.y - camera.y, this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);	
-				} else {
-					spr(this.curr, this.x + camera.x, this.y + camera.y, this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);
-				}				
+			if (typeof(camera) != "undefined") {				
+				spr(this.curr, this.x - camera.x, this.y - camera.y, this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);				
 			} else {
 				spr(this.curr, this.x, this.y , this.tcolor, this.scale, this.flip, this.rotate, this.w, this.h);
 			}
@@ -192,6 +188,7 @@ function init(){
 	//ball
 	ball = new GameObject(100,70);
 	ball.addAnim(new Anim("idle",25));
+	ball.addAnim(new Anim("spin",25,26));
 	ball.setAnim("idle");
 	ball.name = "ball";
 	ball.owner = undefined;
@@ -238,13 +235,17 @@ function init(){
 	plShadow2.name = "player_shadow2";
 	
 	ballShadow = new GameObject(ball.x, ball.y);
-	ballShadow.addAnim(new Anim("idle",26,26));
+	ballShadow.addAnim(new Anim("idle",41,41));
 	ballShadow.setAnim("idle");
 	ballShadow.name = "ball_shadow";
 	ballShadow.tag = "shadow";	
 	ball.children.push(ballShadow);
 	
 	drawfirst.push(ballShadow);
+
+	//Camera Init
+	camera = new GameObject(120, 68); //init centered camera since res 240*136
+	camera.target = player;
 
 	//update/step/tic functions
 	player.update = function(){
@@ -333,7 +334,7 @@ function init(){
 					ball.owner = allplayers[i];
 					allplayers[i].hasBall = true;
 					ball.state = "hands";
-					camera.target.push(ball);
+					camera.target = ball.owner;
 				}
 			}
 		} 
@@ -362,7 +363,7 @@ function init(){
 				ball.target.x = coplayer.x;
 				ball.target.y =  coplayer.y + (2*rescale); //a little under the player pivot
 				player.hasBall = false;
-				camera.remove(ball);
+				camera.target = ball;
 				var x_delta = (ball.target.x - ball.x);
 				var y_delta = (ball.target.y - ball.y);
 				var angleRadians = Math.atan2(y_delta, x_delta);
@@ -373,19 +374,21 @@ function init(){
 				costheta = Math.abs(Math.cos(theta).toFixed(3));				
 				sintheta = Math.abs(Math.sin(theta).toFixed(3));
 				ball.spd = 2;
+				ball.setAnim("spin");
 				sfx(7)	
 				break;		
 			case "passing": //go to target
 				if (ball.x == ball.target.x && ball.y == ball.target.y) { //found coplayer
 					ball.owner = coplayer; //nocaso do gameplay quem tem a bola controla! 1player
 					ball.state = "hands";
+					ball.setAnim("idle");
 					ball.target = undefined;
 					// troca de controle
 					var aux = player;
 					player = coplayer;
 					coplayer = aux;					
 					player.hasBall = true;
-					camera.target.push(ball)
+					camera.target = ball.owner;
 					player.state = "idle";									
 				} else {					
 					ball.floatx = approach(ball.floatx, ball.target.x, costheta*ball.spd);
@@ -403,24 +406,7 @@ function init(){
 			default:
 				break;
 		}
-	}
-
-	camera = new GameObject(120, 68); //init centered camera since res 240*136
-	camera.target = [];
-	camera.target.push(player);
-	camera.contains = function(e){
-		var res = false;
-		for (var i=0; i<this.target.length; i++){
-			if (e == this.target[i]) res = true;
-		}
-		return res;
-	}
-	camera.remove = function(e){
-		for (var i=0; i<this.target.length; i++){
-			if (e == this.target[i]) this.target.splice(i, 1) ;
-		}
-	}
-
+	}	
 }
 
 /** draw stuff before, objects and stuff as shadows */
@@ -428,7 +414,7 @@ function drawBegin(){
 	//map [x=0 y=0] [w=30 h=17] [sx=0 sy=0] [colorkey=-1] [scale=1] [remap=nil]
 	//map(4,3, 19, 6, 10, 20, 0, rescale, null);
 	if (typeof(camera) != "undefined"){
-		map(4,3, 19, 6, camera.x, camera.y, 0, rescale, null);
+		map(4,3, 19, 6, -camera.x, -camera.y, 0, rescale, null);
 	} else {
 		map(4,3, 19, 6, 10, 20, 0, rescale, null);
 	}
@@ -499,10 +485,10 @@ function update(){
 			playershadows[i].setAnim("defend");
 		else playershadows[i].setAnim("idle");
 	}
-	//update camera position (centered on player)
+	//update camera position (centered on player/ball owner/camera target)
 	if (typeof(camera) != "undefined") {	
-		camera.x = player.x - 120;
-		camera.y = player.y -  68;
+		camera.x = camera.target.x - 120;
+		camera.y = camera.target.y -  68;
 	}
 }
 
@@ -535,7 +521,7 @@ function intro(){
 		if (intropoint.step % 3 == 0) spr(200, intropoint.x+2, intropoint.y, 0, 1, 0,0,8,11); //fliker shadow
 		spr(192, intropoint.x, intropoint.y, 0, 1, 0,0,8,11);
 		var slidespd = intropoint.x > 120 ? 2 : 1;				
-		intropoint.x -=slidespd;		
+		intropoint.x -= slidespd;		
 	} else if (intropoint.logox < 45){ //those ifs are like while since they are in game loop ;>
 		//slide title		
 		var slidespd = intropoint.logox < 10 ? 2 : 1;
@@ -577,13 +563,17 @@ function drawtitlescreen(p){
 }
 
 function drawBasket(xb, yb, s){	
-	xb = 22; yb = 54;
+	xb = 12; yb = 34; //left basket
+	if (typeof(camera) != 'undefined') {
+		xb -= camera.x; yb -= camera.y;
+	}	
 	//rect x y w h color
-	rect(xb, yb+14,4*rescale, 2*rescale, 2);
+	rect(xb, yb+14,4*rescale, 2*rescale, 2); //basket shadow
 	//pin point under basket (represent basket deph)
-	rect(58, 66, 3*rescale, 2*rescale, 2);
+	rect(xb+38, yb+12, 3*rescale, 2*rescale, 2);
 	//id x y [colorkey=-1] [scale=1] [flip=0] [rotate=0] [w=1 h=1]
-	spr(59, xb, yb, 0, rescale, 0,0,1,1);
+	spr(59, xb, yb, 0, rescale, 0,0,1,1); //basket pole
+	//draw basket
 	spr(27, xb, yb-24*rescale, 0, rescale, 0,0,3,3);
 }
 
