@@ -199,7 +199,7 @@ function init(){
 	ball.z = ball.y;
 
 	//17 - 61
-	obj_basket_r = new GameObject(19,54);
+	obj_basket_r = new GameObject(8,34);
 	obj_basket_r.tag = "basket";
 	obj_basket_r.name = "basket_r";
 	obj_basket_r.draw = drawBasket;
@@ -464,7 +464,11 @@ function draw() {
 		print(debugmsg, 0, 80);
 		debug_t--
 	}
-	print("X:" + ball.x + " Y:" + ball.y, 0, 100);
+	//debug pints on screen
+	pal(15,0); //switch 
+	print("X:" + ball.x + " Y:" + ball.y, 1, 100);
+	print("X:" + player.x + " Y:" + player.y, 1, 110);
+	pal(); //reset
 
 }
 
@@ -563,9 +567,10 @@ function drawtitlescreen(p){
 }
 
 function drawBasket(xb, yb, s){	
-	xb = 12; yb = 34; //left basket
+	var xb = 12; yb = 34; //left basket
+	var xr = 244;
 	if (typeof(camera) != 'undefined') {
-		xb -= camera.x; yb -= camera.y;
+		xb -= camera.x; yb -= camera.y; xr -= camera.x;
 	}	
 	//rect x y w h color
 	rect(xb, yb+14,4*rescale, 2*rescale, 2); //basket shadow
@@ -573,8 +578,13 @@ function drawBasket(xb, yb, s){
 	rect(xb+38, yb+12, 3*rescale, 2*rescale, 2);
 	//id x y [colorkey=-1] [scale=1] [flip=0] [rotate=0] [w=1 h=1]
 	spr(59, xb, yb, 0, rescale, 0,0,1,1); //basket pole
-	//draw basket
+	//draw basket - left
 	spr(27, xb, yb-24*rescale, 0, rescale, 0,0,3,3);
+	//draw basket - right
+	rect(xr+40, yb+14,4*rescale, 2*rescale, 2); //basket shadow right
+	spr(27, xr, yb-24*rescale, 0, rescale, 1,0,3,3); //basket right
+	spr(59, xr+32, yb, 0, rescale, 1,0,1,1); //basket pole right
+	rect(xb+38, yb+12, 3*rescale, 2*rescale, 2); //pin point under basket right
 }
 
 function menu(){
