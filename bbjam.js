@@ -275,12 +275,14 @@ function init(){
 		//buttons
 		if(btn(4)) { //btnA or keyboar = Z
 			btn4pressed = true;
-			if (player.hasBall) {
-				player.setAnim("shoot");
-				player.state = "shooting";
-			} else {
-				player.state = "defending";
-				player.setAnim("defend_diag");
+			if (player.state != "shoot"){
+				if (player.hasBall) {
+					player.setAnim("shoot");
+					player.state = ball.state  = "shoot";				
+				} else {
+					player.state = "defending";
+					player.setAnim("defend_diag");
+				}
 			}
 		}
 		if (!btn(4)&& btn4pressed){ //btn4 released
@@ -306,7 +308,7 @@ function init(){
 		if ((player.hspeed != 0 || player.vspeed != 0) && player.getCurrentAnim() != "run"){
 			player.setAnim("run")
 		}
-		if (player.hspeed == 0 && player.vspeed == 0 && player.getCurrentAnim() != "idle" && player.getCurrentAnim() != "idle_ball" && player.getCurrentAnim() != "defend_diag" && player.getCurrentAnim() != "pass") {
+		if (player.hspeed == 0 && player.vspeed == 0 && player.getCurrentAnim() != "idle" && player.getCurrentAnim() != "idle_ball" && player.getCurrentAnim() != "defend_diag" && player.getCurrentAnim() != "pass" && player.getCurrentAnim() != "shoot") {
 			if (ball.owner == player) 
 				player.setAnim("idle_ball");
 			else 
@@ -338,7 +340,7 @@ function init(){
 				}
 			}
 		} 
-		var theta = 0; //angle in degrees
+		var theta = 0; //angle in rads
 		switch (ball.state) {
 			case "idle":
 				break;
@@ -379,11 +381,11 @@ function init(){
 				break;		
 			case "passing": //go to target
 				if (ball.x == ball.target.x && ball.y == ball.target.y) { //found coplayer
-					ball.owner = coplayer; //nocaso do gameplay quem tem a bola controla! 1player
+					ball.owner = coplayer; //gamedesign or mode choices, ball owner always take control(no IA)
 					ball.state = "hands";
 					ball.setAnim("idle");
 					ball.target = undefined;
-					// troca de controle
+					// switch player control
 					var aux = player;
 					player = coplayer;
 					coplayer = aux;					
@@ -401,8 +403,30 @@ function init(){
 				break;		
 			case "shoot":
 				ball.owner = undefined;
-				ball.state = "shoot";	
+				//player.hasBall = false;
+				//ball.state = "shoot";	
+				
+				if (typeof(pl_jump) == 'undefined')
+					pl_jump = 0;
+				else 
+					pl_jump++;					
+				
+				if (pl_jump < 6)
+					player.y--;
+				else if (pl_jump > 18 && pl_jump < 25) {  //pause in air					
+					player.y++;					
+				} else if (pl_jump >= 25) {
+					player.state = "idle";
+					player.setAnim("idle");
+					ball.state = "takeoff"
+					pl_jump = undefined;
+				}				
+				ball.x = player.x + 3*rescale;
+				ball.y = player.y - 2*rescale;
 				break;	
+			case "takeoff":
+				//TODO TEAM A VS TEAM B
+				break;
 			default:
 				break;
 		}
@@ -467,7 +491,8 @@ function draw() {
 	//debug pints on screen
 	pal(15,0); //switch 
 	print("X:" + ball.x + " Y:" + ball.y, 1, 100);
-	print("X:" + player.x + " Y:" + player.y, 1, 110);
+	print("X:" + player.x + " Y:" + player.y, 1, 108);
+	print("ball state:"+ball.state, 1, 115);
 	pal(); //reset
 
 }
@@ -481,7 +506,8 @@ function update(){
 	//update shadows states
 	for (var i=0; i<playershadows.length; i++){
 		playershadows[i].x = allplayers[i].x;
-		playershadows[i].y = allplayers[i].y + 1;
+		if (allplayers[i].getCurrentAnim() != "shoot")
+			playershadows[i].y = allplayers[i].y + 1;
 		playershadows[i].flip = allplayers[i].flip;
 		if (allplayers[i].getCurrentAnim() == "shoot")
 			playershadows[i].setAnim("shoot");
